@@ -1,39 +1,30 @@
 using OrderProcessing.Models;
+using OrderProcessing.Promotions;
+using System.Collections.Generic;
+using System.Linq;
 
-namespace OrderProcessing;
-
-public class OrderService
+namespace OrderProcessing
 {
-    public Order PlaceOrder(List<OrderItem> items, decimal threshold = 0, decimal discount = 0, bool isBuyOneGetOneForCosmeticsActive = false)
+    public class OrderService
     {
-        var order = new Order { Items = new List<OrderItem>() };
-        foreach(var item in items)
+        public Order PlaceOrder(List<OrderItem> items, List<IPromotionStrategy> promotions)
         {
-            order.Items.Add(new OrderItem { Product = item.Product, Quantity = item.Quantity });
-        }
-
-        order.OriginalAmount = items.Sum(i => i.Product.UnitPrice * i.Quantity);
-
-        if (isBuyOneGetOneForCosmeticsActive)
-        {
-            var cosmeticItems = items.Where(i => i.Product.Category == "cosmetics").ToList();
-            foreach (var cosmeticItem in cosmeticItems)
+            var order = new Order { Items = new List<OrderItem>() };
+            foreach(var item in items)
             {
-                var existingItem = order.Items.First(i => i.Product.Name == cosmeticItem.Product.Name);
-                existingItem.Quantity++;
+                order.Items.Add(new OrderItem { Product = item.Product, Quantity = item.Quantity });
             }
-        }
 
-        if (order.OriginalAmount >= threshold)
-        {
-            order.Discount = discount;
-        }
-        else
-        {
+            order.OriginalAmount = items.Sum(i => i.Product.UnitPrice * i.Quantity);
             order.Discount = 0;
-        }
 
-        order.TotalAmount = order.OriginalAmount - order.Discount;
-        return order;
+            foreach (var promotion in promotions)
+            {
+                promotion.ApplyPromotion(order);
+            }
+
+            order.TotalAmount = order.OriginalAmount - order.Discount;
+            return order;
+        }
     }
 }

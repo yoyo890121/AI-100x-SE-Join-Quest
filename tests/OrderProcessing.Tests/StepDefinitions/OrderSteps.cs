@@ -1,6 +1,7 @@
 
 using FluentAssertions;
 using OrderProcessing.Models;
+using OrderProcessing.Promotions;
 using Reqnroll;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,6 +17,7 @@ namespace OrderProcessing.Tests.StepDefinitions
         public OrderSteps(ScenarioContext scenarioContext)
         {
             _scenarioContext = scenarioContext;
+            _scenarioContext.Set(new List<IPromotionStrategy>(), "Promotions");
         }
 
         [Given(@"no promotions are applied")]
@@ -42,11 +44,8 @@ namespace OrderProcessing.Tests.StepDefinitions
                 });
             }
 
-            var threshold = _scenarioContext.ContainsKey("Threshold") ? _scenarioContext.Get<decimal>("Threshold") : 0;
-            var discount = _scenarioContext.ContainsKey("Discount") ? _scenarioContext.Get<decimal>("Discount") : 0;
-            var isBuyOneGetOneForCosmeticsActive = _scenarioContext.ContainsKey("IsBuyOneGetOneForCosmeticsActive") && _scenarioContext.Get<bool>("IsBuyOneGetOneForCosmeticsActive");
-
-            var order = _orderService.PlaceOrder(orderItems, threshold, discount, isBuyOneGetOneForCosmeticsActive);
+            var promotions = _scenarioContext.Get<List<IPromotionStrategy>>("Promotions");
+            var order = _orderService.PlaceOrder(orderItems, promotions);
             _scenarioContext.Set(order, "Order");
         }
 
@@ -88,14 +87,24 @@ namespace OrderProcessing.Tests.StepDefinitions
         public void GivenTheThresholdDiscountPromotionIsConfigured(Table table)
         {
             var row = table.Rows.First();
-            _scenarioContext.Set(decimal.Parse(row["threshold"]), "Threshold");
-            _scenarioContext.Set(decimal.Parse(row["discount"]), "Discount");
+            var threshold = decimal.Parse(row["threshold"]);
+            var discount = decimal.Parse(row["discount"]);
+            var promotions = _scenarioContext.Get<List<IPromotionStrategy>>("Promotions");
+            promotions.Add(new ThresholdDiscountStrategy(threshold, discount));
         }
 
         [Given(@"the buy one get one promotion for cosmetics is active")]
         public void GivenTheBuyOneGetOnePromotionForCosmeticsIsActive()
         {
-            _scenarioContext.Set(true, "IsBuyOneGetOneForCosmeticsActive");
+            var promotions = _scenarioContext.Get<List<IPromotionStrategy>>("Promotions");
+            promotions.Add(new BuyOneGetOneForCosmeticsStrategy());
+        }
+
+        [Given(@"the Double 11 promotion is active")]
+        public void GivenTheDouble11PromotionIsActive()
+        {
+            var promotions = _scenarioContext.Get<List<IPromotionStrategy>>("Promotions");
+            promotions.Add(new Double11Strategy());
         }
     }
 }
