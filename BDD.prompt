@@ -9,9 +9,9 @@
 
 
 ## Tech Stack
-1. Language Env：Java
-2. BDD Test framework: Cucumber
-3. Native test framework: Junit5
+1. Language Env: .NET 8
+2. BDD Test framework: Cucumber (Reqnroll)
+3. Native test framework: xUnit.net
 
 ## Application Environment
 1. App 類型：純模組程式碼
